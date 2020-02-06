@@ -35,10 +35,9 @@ task :release do
   Rake::Task['workarea:changelog'].execute
   system 'git add CHANGELOG.md'
   system 'git commit -m "Update CHANGELOG"'
-  system 'git push origin HEAD'
 
   system "git tag -a v#{Workarea::MagentoDataImporter::VERSION} -m 'Tagging #{Workarea::MagentoDataImporter::VERSION}'"
-  system 'git push --tags'
+  system 'git push origin HEAD --follow-tags'
 
   system "gem build workarea-magento_data_importer.gemspec"
   system "gem push workarea-magento_data_importer-#{Workarea::MagentoDataImporter::VERSION}.gem"

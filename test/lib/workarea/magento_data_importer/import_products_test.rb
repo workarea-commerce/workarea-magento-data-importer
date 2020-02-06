@@ -34,6 +34,15 @@ module Workarea
 
         assert_equal(2, Workarea::Catalog::Category.count)
         assert_equal(8, Workarea::Navigation::Redirect.count)
+        assert_equal(0, Workarea::Import::MagentoProduct.count)
+      end
+
+      def test_errors_in_process
+        csv = IO.read(magento_products_csv_path)
+        csv << "acj005,,Jewelry,simple,Accessories/Jewelry,Default Category,base,,,,,,,,,,,Indigo,,Haiti,2013-03-19 18:10:45,,,,,,,,,,,,Female,,,,,,0,,,/a/c/acj004_2.jpg,,Earrings"
+        file = create_tempfile(csv, extension: 'csv')
+        Workarea::MagentoDataImporter::ImportProducts.import!(file)
+        assert_equal(1, Workarea::Import::MagentoProduct.count)
       end
     end
   end

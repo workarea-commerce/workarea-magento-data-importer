@@ -13,25 +13,41 @@ module Workarea
           Workarea::Import::MagentoProduct.create!(
             product_data: row.to_hash,
             magento_product_id: current_id,
-            product_type: row[:_type],
-            associated_product_id: row[:_super_products_sku]
+            product_type: row[:_type]
           )
         end
 
         Sidekiq::Callbacks.disable do
-          Workarea::Import::MagentoProduct.parent_products.each do |parent_product|
-            MagentoDataImporter::ConfigurableProduct.new(parent_product).process
-          end
-          Workarea::Import::MagentoProduct.where(imported: true).delete_all
-
-          Workarea::Import::MagentoProduct.simple_products.each do |simple_product|
-            MagentoDataImporter::SimpleProduct.new(simple_product).process
-          end
-          Workarea::Import::MagentoProduct.where(imported: true).delete_all
+          process_configurable_products
+          process_simple_products
         end
       end
 
       private
+
+      def self.process_configurable_products
+        Workarea::Import::MagentoProduct.parent_products.each do |parent_product|
+          begin
+            MagentoDataImporter::ConfigurableProduct.new(parent_product).process
+          rescue
+            puts "Error importing product #{parent_product.magento_product_id}"
+            parent_product.update_attributes!(import_failed: true)
+          end
+        end
+        Workarea::Import::MagentoProduct.where(imported: true).delete_all
+      end
+
+      def self.process_simple_products
+        Workarea::Import::MagentoProduct.simple_products.each do |simple_product|
+          begin
+            MagentoDataImporter::SimpleProduct.new(simple_product).process
+          rescue
+            puts "Error importing product #{simple_product.magento_product_id}"
+            simple_product.update_attributes!(import_failed: true)
+          end
+        end
+        Workarea::Import::MagentoProduct.where(imported: true).delete_all
+      end
 
       def self.csv_options
         {

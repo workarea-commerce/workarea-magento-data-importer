@@ -21,7 +21,7 @@ module Workarea
         product_details = build_product_details(product_data)
         product.update_details(product_details)
 
-        product.save! rescue puts "Error saving #{magento_product.magento_product_id}"
+        product.save!
 
         if product_data[:sku].present?
           sku = product_data[:sku].parameterize
