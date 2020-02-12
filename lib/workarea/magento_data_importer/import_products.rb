@@ -17,9 +17,21 @@ module Workarea
           )
         end
 
+        # get distinct values for creating the taxonomy, get this list before import because the
+        # import collection is deleted after import.
+        import_categories = Workarea::Import::MagentoProduct.distinct("product_data._category").compact!.sort!
         Sidekiq::Callbacks.disable do
+          puts "Creating Configurable Products"
           process_configurable_products
+
+          puts "Creating Simple Products"
           process_simple_products
+
+          puts "Creating Taxonomy"
+          process_taxonomy(import_categories)
+
+          puts "Creating Navigation Menu"
+          process_navigation_menu
         end
       end
 
@@ -47,6 +59,19 @@ module Workarea
           end
         end
         Workarea::Import::MagentoProduct.where(imported: true).delete_all
+      end
+
+      def self.process_taxonomy(import_categories)
+        import_categories.each do |import_category|
+          Workarea::MagentoDataImporter::Taxonomy.new(import_category).process
+        end
+      end
+
+      def self.process_navigation_menu
+        taxons = Workarea::Navigation::Taxon.where(depth: 1)
+        taxons.each do |taxon|
+          Workarea::Navigation::Menu.create!(taxon: taxon)
+        end
       end
 
       def self.csv_options

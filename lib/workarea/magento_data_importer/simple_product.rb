@@ -10,12 +10,15 @@ module Workarea
           product.assign_attributes(product_attributes)
         end
 
+        create_categories(product_data)
+
         existing_filters = product.filters
-        new_filters = row_filters(product_data)
 
-        new_product_filters = add_filter_values(existing_filters, new_filters)
+        new_filters = row_filters(product_data) || {}
+        new_filters.merge!(category_filters(product_data))
 
-        filters = category_filters.merge(new_product_filters)
+        filters = add_filter_values(existing_filters, new_filters)
+
         product.filters = filters
 
         product_details = build_product_details(product_data)
@@ -29,8 +32,6 @@ module Workarea
           create_inventory_sku(sku)
           create_pricing_sku(sku)
         end
-
-        create_categories
 
         create_redirect(product_data)
 
@@ -47,7 +48,7 @@ module Workarea
       def create_inventory_sku(sku)
         inventory_sku = Workarea::Inventory::Sku.find_or_initialize_by(id: sku)
         inventory_sku.available = product_data[:qty] || 0
-        inventory_sku.policy = "standard"
+        inventory_sku.policy = inventory_policy(product_data)
         inventory_sku.save! rescue puts "Inventory #{sku} variant could not be saved"
       end
 

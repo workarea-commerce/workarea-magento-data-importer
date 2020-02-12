@@ -73,9 +73,9 @@ module Workarea
       # on "/" which is the default seperator in the magento export
       #
       # @return [Hash]
-      def category_filters
-        if product_data[:_category].present?
-          { category: product_data[:_category].split('/') }
+      def category_filters(attrs)
+        if attrs[:_category].present?
+          { magento_category: attrs[:_category].split('/') }
         else
           {}
         end
@@ -107,13 +107,25 @@ module Workarea
       #
       # @param attrs [Hash] a hash of magento product data
       # @return [Hash]
-      def create_categories
-        return unless product_data[:_category].present?
+      def create_categories(attrs)
+        return unless attrs[:_category].present?
+        categories = attrs[:_category].split('/')
 
-        product_data[:_category].split('/').each do |category_name|
-          category = Workarea::Catalog::Category.find_or_create_by(name: category_name)
-          category.product_ids << product.id unless category.product_ids.include?(category.id)
+        count = 0
+        max_size = categories.size - 1
+
+        while count <= max_size do
+          client_id =  categories[0..count].join("/")
+          category = Workarea::Catalog::Category.find_or_initialize_by(client_id: client_id)
+
+          category_name = client_id.split("/").last
+          category.name = category_name
+
+          existing_rules = category.product_rules.map(&:value)
+          category.product_rules.build(name: "magento_category", operator: "equals", value: category_name) unless existing_rules.include?(category_name)
           category.save!
+
+          count = count + 1
         end
       end
 
@@ -166,6 +178,14 @@ module Workarea
         destination = ProductUrl.product_path(product)
 
         Workarea::Navigation::Redirect.create(path: path, destination: destination)
+      end
+
+      def inventory_policy(attrs)
+        if attrs[:backorders] == 1
+          "allow_backorder"
+        else
+          "standard"
+        end
       end
     end
   end

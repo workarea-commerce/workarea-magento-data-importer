@@ -52,6 +52,8 @@ The following data is imported:
 * Pricing
 * Product images
 * Categories
+* Taxonomy
+* Navigation Menu
 * Redirects based on the URL key in the export
 
 

@@ -5,7 +5,7 @@ module Workarea
 
       def process
         product.assign_attributes(product_attributes)
-        product.filters = category_filters
+        product.filters = category_filters(product_data)
 
         product_details = build_product_details(product_data)
         product.update_details(product_details)
@@ -14,7 +14,7 @@ module Workarea
 
         create_variants
 
-        create_categories
+        create_categories(product_data)
 
         create_redirect(product_data)
 
@@ -64,13 +64,19 @@ module Workarea
           # create the inventory sku
           inventory_sku = Workarea::Inventory::Sku.find_or_initialize_by(id: sku)
           inventory_sku.available = details_row.product_data[:qty] || 0
-          inventory_sku.policy = "standard"
+          inventory_sku.policy = inventory_policy(details_row.product_data)
           inventory_sku.save! rescue (puts "inventory #{sku} variant could not be saved" && next)
 
           detail_product_filters = product.filters
+
           detail_products.each do |detail_product|
             detail_product_data = detail_product.product_data.deep_symbolize_keys
             build_image(detail_product_data)
+
+            create_categories(detail_product_data)
+
+            detail_product_category_filters = category_filters(detail_product_data)
+            detail_product_filters = add_filter_values(detail_product_filters, detail_product_category_filters)
 
             new_filters = row_filters(detail_product_data)
             detail_product_filters = add_filter_values(detail_product_filters, new_filters)
@@ -80,6 +86,12 @@ module Workarea
 
             create_redirect(detail_product_data)
           end
+
+          # Create the categories for variants that are categorized differently than their
+          # parent products.
+          create_categories(variant_product_data)
+          variant_product_category_filters = category_filters(variant_product_data)
+          detail_product_filters = add_filter_values(detail_product_filters, variant_product_category_filters)
 
           product.filters = detail_product_filters
           product.save!
