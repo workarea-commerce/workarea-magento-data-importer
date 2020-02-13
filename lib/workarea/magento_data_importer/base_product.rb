@@ -75,7 +75,7 @@ module Workarea
       # @return [Hash]
       def category_filters(attrs)
         if attrs[:_category].present?
-          { magento_category: attrs[:_category].split('/') }
+          { import_category: attrs[:_category].split('/') }
         else
           {}
         end
@@ -119,10 +119,10 @@ module Workarea
           category = Workarea::Catalog::Category.find_or_initialize_by(client_id: client_id)
 
           category_name = client_id.split("/").last
-          category.name = category_name
+          category.name = category_name.titleize
 
           existing_rules = category.product_rules.map(&:value)
-          category.product_rules.build(name: "magento_category", operator: "equals", value: category_name) unless existing_rules.include?(category_name)
+          category.product_rules.build(name: "import_category", operator: "equals", value: category_name) unless existing_rules.include?(category_name)
           category.save!
 
           count = count + 1

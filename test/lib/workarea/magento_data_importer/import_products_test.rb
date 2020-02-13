@@ -30,11 +30,20 @@ module Workarea
         assert_equal("Pearl Stud Earrings", simple_product.name)
         assert_equal(1, simple_product.variants.size)
         assert_equal({ "jewelry_type" => ["Earrings"], "gender" => ["Female"] }, simple_product.details)
-        assert_equal({ "color" => ["Ivory"], "magento_category" => [["Accessories", "Jewelry"]] }, simple_product.filters)
+        assert_equal({ "color" => ["Ivory"], "import_category" => [["Accessories", "Jewelry"]] }, simple_product.filters)
 
+        categories = Workarea::Catalog::Category.all.map(&:name).sort
         assert_equal(2, Workarea::Catalog::Category.count)
-        assert_equal(3, Workarea::Navigation::Taxon.count) #home, accessories, jewelery
+        assert_equal(["Accessories", "Jewelry"], categories)
+
+        assert_equal(3, Workarea::Navigation::Taxon.count)
+        taxons = Workarea::Navigation::Taxon.all.map(&:name).sort
+        assert_equal(["Accessories", "Home", "Jewelry"], taxons)
+
         assert_equal(1, Workarea::Navigation::Menu.count)
+        menus = Workarea::Navigation::Menu.all.map(&:name)
+        assert_equal(["Accessories"], menus)
+
         assert_equal(8, Workarea::Navigation::Redirect.count)
         assert_equal(0, Workarea::Import::MagentoProduct.count)
       end
