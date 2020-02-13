@@ -3,6 +3,14 @@ require 'test_helper'
 module Workarea
   module MagentoDataImporter
     class ImportProductsTest < TestCase
+      setup :store_env_vars
+
+      def store_env_vars
+        @old_product_attributes_columns = ENV["product_attributes_columns"]
+        @old_product_filter_columns = ENV["product_filter_columns"]
+        @old_image_option_column = ENV["image_option_column"]
+      end
+
       def test_import_products
         ENV["product_attributes_columns"] = 'jewelry_type,gender,frame_syle,electronic_type'
         ENV["product_filter_columns"] = 'color,size'
@@ -46,6 +54,10 @@ module Workarea
 
         assert_equal(8, Workarea::Navigation::Redirect.count)
         assert_equal(0, Workarea::Import::MagentoProduct.count)
+      ensure
+        ENV["product_attributes_columns"] = @old_product_attributes_columns
+        ENV["product_filter_columns"] = @old_product_filter_columns
+        ENV["image_option_column"] = @old_image_option_column
       end
 
       def test_errors_in_process
